@@ -16,6 +16,16 @@ export class SignUpDto {
     password: string;
 }
 
+export class VerifyEmailDto {
+    @IsString()
+    @IsEmail()
+    email: string;
+
+    @IsString()
+    @IsNotEmpty()
+    otp: string;
+}
+
 export class SignInDto {
     @IsString()
     @IsEmail()
@@ -24,4 +34,34 @@ export class SignInDto {
     @IsString()
     @IsNotEmpty()
     password: string;
+}
+
+export class ForgetPasswordDto {
+    @IsString()
+    @IsEmail()
+    email: string;
+}
+
+export class ConfirmResetEmailDto {
+    @IsString()
+    @IsEmail()
+    email: string;
+
+    @IsString()
+    @IsNotEmpty()
+    otp: string;
+}
+
+export class ResetPasswordDto {
+    @IsString()
+    @IsEmail()
+    email: string;
+    
+    @IsString()
+    @IsNotEmpty()
+    password: string;
+
+    @IsString()
+    @IsNotEmpty()
+    confirmPassword: string;
 }

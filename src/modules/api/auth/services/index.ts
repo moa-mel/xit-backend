@@ -6,12 +6,14 @@ import Redis from 'ioredis';
 import * as bcrypt from 'bcryptjs';
 import { refreshJwtSecret, refreshTokenExpiresIn } from '@/config';
 import { buildResponse, generateId } from '@/utils';
-import { SignInDto, SignUpDto } from '../dtos';
+import { ConfirmResetEmailDto, ForgetPasswordDto, ResetPasswordDto, SignInDto, SignUpDto, VerifyEmailDto } from '../dtos';
 import { LoginMeta } from '../interfaces';
+import { EmailService } from '../../email/services';
 
 export class AuthService {
     constructor(
         private prisma: PrismaService,
+        private emailService: EmailService,
         private readonly jwtService: JwtService,
         @InjectRedis() private readonly redisService: Redis
     ) { }
@@ -56,13 +58,69 @@ export class AuthService {
                 lastName: options.lastName,
                 email: options.email,
                 password: await bcrypt.hash(options.password, 10),
+                isVerified: false,
+                emailVerifiedAt: null
+
             }
         })
 
+        // Generate OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
+
+        //save OTP to redis
+        await this.redisService.set(
+            `otp:${user.identifier}`,
+            otp,
+            'EX',
+            5 * 60 // 5 minutes
+        );
+
+        //send OTP to user email
+        await this.emailService.sendEmailOTP(user.firstName, user.email, otp);
+
         return buildResponse({
-            message: 'User created Successfully',
+            message: 'User created Successfully. Check your email for verification code',
             data: user
         })
+    }
+
+    async verifyEmail(options: VerifyEmailDto) {
+        const user = await this.prisma.user.findUnique({
+            where: {
+                email: options.email
+            }
+        })
+
+        if (!user) {
+            throw new Error('user not found')
+        }
+
+        const savedOtp = await this.redisService.get(`otp:${user.identifier}`)
+
+        if (!savedOtp) {
+            throw new Error('OTP expired')
+        }
+
+        if (savedOtp !== options.otp) {
+            throw new Error('Invalid OTP')
+        }
+
+        await this.prisma.user.update({
+            where: {
+                id: user.id
+            },
+            data: {
+                isVerified: true,
+                emailVerifiedAt: new Date()
+            }
+        });
+
+        await this.redisService.del(`otp:${user.identifier}`)
+
+        return buildResponse({
+            message: "Email verified successfully"
+        })
+
     }
 
     async signIn(options: SignInDto) {
@@ -114,7 +172,8 @@ export class AuthService {
         })
     }
 
-    async signOut(accessToken: string): Promise<void> {
+    async signOut(accessToken: string) {
+        console.log('accessToken', accessToken)
         const decodeToken = this.jwtService.decode(accessToken);
         if (!decodeToken) {
             throw new Error('Invalid token')
@@ -131,6 +190,91 @@ export class AuthService {
         // Also delete the refresh token for the user
         await this.redisService.del(`refreshToken:${decodeToken.sub}`);
 
+        return buildResponse({
+            message: "User Logged out successfully",
+        })
+
+    }
+
+    async forgetPassword(options: ForgetPasswordDto) {
+        const user = await this.prisma.user.findUnique({
+            where: {
+                email: options.email
+            }
+        })
+
+        if (!user) {
+            throw new Error('User not found')
+        }
+
+        // Generate OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
+
+        //send OTP to user email
+        await this.emailService.sendPasswordResetOTP(user.firstName, user.email, otp);
+
+        return buildResponse({
+            message: "Password reset OTP sent to your email"
+        });
+
+    }
+
+    async confirmResetEmail(options: ConfirmResetEmailDto) {
+        const user = await this.prisma.user.findUnique({
+            where: {
+                email: options.email
+            }
+        })
+
+        if (!user) {
+            throw new Error("user not found")
+        }
+
+        const savedOtp = await this.redisService.get(`resetOtp:${user.identifier}`)
+
+        if (!savedOtp) {
+            throw new Error('OTP expired')
+        }
+
+        if (savedOtp !== options.otp) {
+            throw new Error('Invalid OTP')
+        }
+
+        return buildResponse({
+            message: "OTP verified successfully"
+        })
+    }
+
+    async resetPassword(options: ResetPasswordDto) {
+        if (options.password !== options.confirmPassword) {
+            throw new Error('Password do not match')
+        }
+
+        const user = await this.prisma.user.findUnique({
+            where: {
+                email: options.email
+            }
+        })
+
+        if (!user) {
+            throw new Error('User not found')
+        }
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(options.password, 10);
+
+        // Update password
+        await this.prisma.user.update({
+            where: { email: options.email },
+            data: { password: hashedPassword }
+        });
+
+        // Delete reset OTP after successful password reset
+        await this.redisService.del(`resetOtp:${user.identifier}`);
+
+        return buildResponse({
+            message: "Password reset successfully"
+        });
     }
 
 }
