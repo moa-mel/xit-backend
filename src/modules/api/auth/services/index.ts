@@ -51,44 +51,58 @@ export class AuthService {
     }
 
     async signUp(options: SignUpDto) {
-        const user = await this.prisma.user.create({
-            data: {
-                identifier: generateId({ type: 'identifier' }),
-                firstName: options.firstName,
-                lastName: options.lastName,
-                email: options.email,
-                password: await bcrypt.hash(options.password, 10),
-                isVerified: false,
-                emailVerifiedAt: null
+        const user = await this.prisma.$transaction(async (prisma) => {
+            // Check if email already exists
+            const existingUser = await prisma.user.findUnique({
+                where: { email: options.email },
+            });
 
+            if (existingUser) {
+                throw new Error('Email already in use');
             }
-        })
+
+            // Create the new user
+            const newUser = await prisma.user.create({
+                data: {
+                    identifier: generateId({ type: 'identifier' }),
+                    firstName: options.firstName,
+                    lastName: options.lastName,
+                    email: options.email,
+                    password: await bcrypt.hash(options.password, 10),
+                    isVerified: false,
+                    emailVerifiedAt: null, // make sure this is nullable in Prisma
+                },
+            });
+
+            return newUser;
+        });
 
         // Generate OTP
-        const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-        //save OTP to redis
-        await this.redisService.set(
-            `otp:${user.identifier}`,
-            otp,
-            'EX',
-            5 * 60 // 5 minutes
-        );
+        // Save OTP to Redis
+        await this.redisService.set(`otp:${user.identifier}`, otp, 'EX', 5 * 60);
 
-        //send OTP to user email
+        const verification = await this.redisService.get(`otp:${user.identifier}`);
+        console.log('OTP saved verification:', {
+            identifier: user.identifier,
+            otpSaved: !!verification,
+            otp: verification
+        });
+
+        // Send OTP email
         await this.emailService.sendEmailOTP(user.firstName, user.email, otp);
 
         return buildResponse({
-            message: 'User created Successfully. Check your email for verification code',
-            data: user
-        })
+            message: 'User created successfully. Check your email for verification code',
+            data: user,
+        });
     }
 
-    async verifyEmail(options: VerifyEmailDto) {
+    async verifyEmail(options: VerifyEmailDto, identifier: string) {
+        const storedOtp = await this.redisService.get(`otp:${identifier}`);
 
-        const identifier = await this.redisService.get(`otp:${options.otp}`);
-
-        if (!identifier) {
+        if (!storedOtp || storedOtp.trim() !== options.otp.trim()) {
             throw new Error("Invalid or expired OTP");
         }
 
@@ -108,13 +122,12 @@ export class AuthService {
             }
         });
 
-        await this.redisService.del(`otp:${options.otp}`);
+        await this.redisService.del(`otp:${identifier}`);
 
         return buildResponse({
             message: "Email verified successfully"
         });
     }
-
 
     async signIn(options: SignInDto) {
         const user = await this.prisma.user.findUnique({
@@ -127,12 +140,17 @@ export class AuthService {
                 firstName: true,
                 lastName: true,
                 email: true,
-                password: true
+                password: true,
+                isVerified: true
             }
         });
 
         if (!user) {
             throw new Error('User not found')
+        }
+
+        if (!user.isVerified) {
+            throw new Error('Email not verified. Please verify your email to log in.');
         }
 
         const validPassword = await this.comparePassword(
@@ -190,79 +208,53 @@ export class AuthService {
     }
 
     async forgetPassword(options: ForgetPasswordDto) {
-        const user = await this.prisma.user.findUnique({
-            where: {
-                email: options.email
-            }
-        })
+        const user = await this.prisma.user.findUnique({ where: { email: options.email } });
+        if (!user) throw new Error('User not found');
 
-        if (!user) {
-            throw new Error('User not found')
-        }
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-        // Generate OTP
-        const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
+        // Store OTP in Redis per user
+        await this.redisService.set(`resetOtp:${user.identifier}`, otp, 'EX', 5 * 60); // expires in 5 min
 
-        //send OTP to user email
         await this.emailService.sendPasswordResetOTP(user.firstName, user.email, otp);
 
-        return buildResponse({
-            message: "Password reset OTP sent to your email"
-        });
-
+        return buildResponse({ message: "Password reset OTP sent to your email" });
     }
 
-    async confirmResetEmail(options: ConfirmResetEmailDto) {
-
-        const identifier = await this.redisService.get(`resetOtp:${options.otp}`)
-
-        if (!identifier) {
+    async confirmResetEmail(options: ConfirmResetEmailDto, identifier: string) {
+        // Get OTP stored in Redis for this user
+        const storedOtp = await this.redisService.get(`resetOtp:${identifier}`);
+        if (!storedOtp || storedOtp.trim() !== options.otp.trim()) {
             throw new Error("Invalid or expired OTP");
         }
 
-        const user = await this.prisma.user.findUnique({
-            where: { identifier }
-        });
-
+        const user = await this.prisma.user.findUnique({ where: { identifier } });
         if (!user) {
             throw new Error("User not found");
         }
 
-        // Store user ID as string with user-specific key
+        // Delete the OTP
+        await this.redisService.del(`resetOtp:${identifier}`);
+
+        // **FIX: Store permission to reset password**
         await this.redisService.set(
-            `resetAllowed:${user.identifier}`,
+            `resetAllowed:${identifier}`,
             user.id.toString(),
             'EX',
-            600
-        ); // expires in 10 mins
+            10 * 60 // expires in 10 minutes
+        );
 
-
-        return buildResponse({
-            message: "OTP verified successfully"
-        })
+        return buildResponse({ message: "OTP verified successfully" });
     }
 
-    async resetPassword(options: ResetPasswordDto) {
-        if (options.password !== options.confirmPassword) {
-            throw new Error('Passwords do not match');
-        }
+    async resetPassword(options: ResetPasswordDto, identifier: string) {
+        if (options.password !== options.confirmPassword) throw new Error('Passwords do not match');
 
-        // Get the user ID that is allowed to reset password
-        const userIdStr = await this.redisService.get("resetAllowed:user");
-        if (!userIdStr) {
-            throw new Error("Reset permission expired or OTP not verified");
-        }
+        // Get userId from Redis
+        const userIdStr = await this.redisService.get(`resetAllowed:${identifier}`);
+        if (!userIdStr) throw new Error("Reset permission expired or OTP not verified");
 
-        // Convert string back to number
         const userId = parseInt(userIdStr, 10);
-
-        const user = await this.prisma.user.findUnique({
-            where: { id: userId } // now correctly typed
-        });
-
-        if (!user) {
-            throw new Error('User not found');
-        }
 
         const hashedPassword = await bcrypt.hash(options.password, 10);
 
@@ -272,13 +264,11 @@ export class AuthService {
         });
 
         // Clean up
-        await this.redisService.del(`resetAllowed:user`);
-        await this.redisService.del(`resetOtp:${user.identifier}`);
+        await this.redisService.del(`resetAllowed:${identifier}`);
 
-        return buildResponse({
-            message: "Password reset successfully"
-        });
+        return buildResponse({ message: "Password reset successfully" });
     }
+
 
 
 }
