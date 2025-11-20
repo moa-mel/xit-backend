@@ -85,43 +85,36 @@ export class AuthService {
     }
 
     async verifyEmail(options: VerifyEmailDto) {
+
+        const identifier = await this.redisService.get(`otp:${options.otp}`);
+
+        if (!identifier) {
+            throw new Error("Invalid or expired OTP");
+        }
+
         const user = await this.prisma.user.findUnique({
-            where: {
-                email: options.email
-            }
-        })
+            where: { identifier }
+        });
 
         if (!user) {
-            throw new Error('user not found')
-        }
-
-        const savedOtp = await this.redisService.get(`otp:${user.identifier}`)
-
-        if (!savedOtp) {
-            throw new Error('OTP expired')
-        }
-
-        if (savedOtp !== options.otp) {
-            throw new Error('Invalid OTP')
+            throw new Error("User not found");
         }
 
         await this.prisma.user.update({
-            where: {
-                id: user.id
-            },
+            where: { id: user.id },
             data: {
                 isVerified: true,
                 emailVerifiedAt: new Date()
             }
         });
 
-        await this.redisService.del(`otp:${user.identifier}`)
+        await this.redisService.del(`otp:${options.otp}`);
 
         return buildResponse({
             message: "Email verified successfully"
-        })
-
+        });
     }
+
 
     async signIn(options: SignInDto) {
         const user = await this.prisma.user.findUnique({
@@ -220,25 +213,29 @@ export class AuthService {
     }
 
     async confirmResetEmail(options: ConfirmResetEmailDto) {
+
+        const identifier = await this.redisService.get(`resetOtp:${options.otp}`)
+
+        if (!identifier) {
+            throw new Error("Invalid or expired OTP");
+        }
+
         const user = await this.prisma.user.findUnique({
-            where: {
-                email: options.email
-            }
-        })
+            where: { identifier }
+        });
 
         if (!user) {
-            throw new Error("user not found")
+            throw new Error("User not found");
         }
 
-        const savedOtp = await this.redisService.get(`resetOtp:${user.identifier}`)
+        // Store user ID as string with user-specific key
+        await this.redisService.set(
+            `resetAllowed:${user.identifier}`,
+            user.id.toString(),
+            'EX',
+            600
+        ); // expires in 10 mins
 
-        if (!savedOtp) {
-            throw new Error('OTP expired')
-        }
-
-        if (savedOtp !== options.otp) {
-            throw new Error('Invalid OTP')
-        }
 
         return buildResponse({
             message: "OTP verified successfully"
@@ -247,34 +244,41 @@ export class AuthService {
 
     async resetPassword(options: ResetPasswordDto) {
         if (options.password !== options.confirmPassword) {
-            throw new Error('Password do not match')
+            throw new Error('Passwords do not match');
         }
+
+        // Get the user ID that is allowed to reset password
+        const userIdStr = await this.redisService.get("resetAllowed:user");
+        if (!userIdStr) {
+            throw new Error("Reset permission expired or OTP not verified");
+        }
+
+        // Convert string back to number
+        const userId = parseInt(userIdStr, 10);
 
         const user = await this.prisma.user.findUnique({
-            where: {
-                email: options.email
-            }
-        })
+            where: { id: userId } // now correctly typed
+        });
 
         if (!user) {
-            throw new Error('User not found')
+            throw new Error('User not found');
         }
 
-        // Hash new password
         const hashedPassword = await bcrypt.hash(options.password, 10);
 
-        // Update password
         await this.prisma.user.update({
-            where: { email: options.email },
+            where: { id: userId },
             data: { password: hashedPassword }
         });
 
-        // Delete reset OTP after successful password reset
+        // Clean up
+        await this.redisService.del(`resetAllowed:user`);
         await this.redisService.del(`resetOtp:${user.identifier}`);
 
         return buildResponse({
             message: "Password reset successfully"
         });
     }
+
 
 }

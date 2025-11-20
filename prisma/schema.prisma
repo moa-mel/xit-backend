@@ -22,7 +22,7 @@ model User {
   password  String
 
   isVerified      Boolean @default(false)
-  emailVerifiedAt DateTime
+  emailVerifiedAt DateTime?
   
   createdAt DateTime @default(now())
 }

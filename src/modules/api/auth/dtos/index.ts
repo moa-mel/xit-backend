@@ -17,9 +17,6 @@ export class SignUpDto {
 }
 
 export class VerifyEmailDto {
-    @IsString()
-    @IsEmail()
-    email: string;
 
     @IsString()
     @IsNotEmpty()
@@ -43,9 +40,6 @@ export class ForgetPasswordDto {
 }
 
 export class ConfirmResetEmailDto {
-    @IsString()
-    @IsEmail()
-    email: string;
 
     @IsString()
     @IsNotEmpty()
@@ -53,10 +47,7 @@ export class ConfirmResetEmailDto {
 }
 
 export class ResetPasswordDto {
-    @IsString()
-    @IsEmail()
-    email: string;
-    
+
     @IsString()
     @IsNotEmpty()
     password: string;
