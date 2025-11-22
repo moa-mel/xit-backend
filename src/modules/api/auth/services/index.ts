@@ -31,7 +31,7 @@ export class AuthService {
 
     }
 
-    private async generateJwtTokens(userId: string) {
+    public async generateJwtTokens(userId: string) {
         const accessToken = await this.jwtService.signAsync({
             sub: userId,
         })
