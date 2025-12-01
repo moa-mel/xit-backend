@@ -1,9 +1,27 @@
 import { INestApplication, Injectable, OnModuleInit } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg'; 
+import { Pool } from 'pg';
 import logger from 'moment-logger';
+
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
+   constructor() {
+    // Create a PostgreSQL connection pool
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+    });
+
+    // Create the Prisma adapter
+    const adapter = new PrismaPg(pool);
+
+    // Initialize PrismaClient with the adapter
+    super({
+      adapter,
+    });
+  }
+
   async onModuleInit() {
     logger.log('Connecting to the database...');
     await this.$connect();
