@@ -1,6 +1,8 @@
-import { User } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
+
 
 import { Request } from 'express';
+
 
 export interface LoginMeta {
   id: number;
