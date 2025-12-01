@@ -236,7 +236,7 @@ export class AuthService {
         // Delete the OTP
         await this.redisService.del(`resetOtp:${identifier}`);
 
-        // **FIX: Store permission to reset password**
+        // Store permission to reset password**
         await this.redisService.set(
             `resetAllowed:${identifier}`,
             user.id.toString(),
