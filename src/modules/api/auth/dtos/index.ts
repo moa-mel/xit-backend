@@ -39,13 +39,6 @@ export class ForgetPasswordDto {
     email: string;
 }
 
-export class ConfirmResetEmailDto {
-
-    @IsString()
-    @IsNotEmpty()
-    otp: string;
-}
-
 export class ResetPasswordDto {
 
     @IsString()

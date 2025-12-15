@@ -1,19 +1,22 @@
 import { PrismaService } from '@/modules/core/prisma/services';
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import * as bcrypt from 'bcryptjs';
 import { refreshJwtSecret, refreshTokenExpiresIn } from '@/config';
 import { buildResponse, generateId } from '@/utils';
-import { ConfirmResetEmailDto, ForgetPasswordDto, ResetPasswordDto, SignInDto, SignUpDto, VerifyEmailDto } from '../dtos';
+import { ForgetPasswordDto, ResetPasswordDto, SignInDto, SignUpDto, VerifyEmailDto } from '../dtos';
 import { LoginMeta } from '../interfaces';
 import { EmailService } from '../../email/services';
+import { DataStoredInToken } from '../interfaces/authenticated-request.interface';
+import { ConfigService } from '@nestjs/config';
 
 export class AuthService {
     constructor(
         private prisma: PrismaService,
         private emailService: EmailService,
+        private configService: ConfigService,
         private readonly jwtService: JwtService,
         @InjectRedis() private readonly redisService: Redis
     ) { }
@@ -221,32 +224,6 @@ export class AuthService {
         return buildResponse({ message: "Password reset OTP sent to your email" });
     }
 
-    async confirmResetEmail(options: ConfirmResetEmailDto, identifier: string) {
-        // Get OTP stored in Redis for this user
-        const storedOtp = await this.redisService.get(`resetOtp:${identifier}`);
-        if (!storedOtp || storedOtp.trim() !== options.otp.trim()) {
-            throw new Error("Invalid or expired OTP");
-        }
-
-        const user = await this.prisma.user.findUnique({ where: { identifier } });
-        if (!user) {
-            throw new Error("User not found");
-        }
-
-        // Delete the OTP
-        await this.redisService.del(`resetOtp:${identifier}`);
-
-        // Store permission to reset password**
-        await this.redisService.set(
-            `resetAllowed:${identifier}`,
-            user.id.toString(),
-            'EX',
-            10 * 60 // expires in 10 minutes
-        );
-
-        return buildResponse({ message: "OTP verified successfully" });
-    }
-
     async resetPassword(options: ResetPasswordDto, identifier: string) {
         if (options.password !== options.confirmPassword) throw new Error('Passwords do not match');
 
@@ -269,6 +246,34 @@ export class AuthService {
         return buildResponse({ message: "Password reset successfully" });
     }
 
+    async refreshAccessToken(token: string) {
+        try {
+            const payload: DataStoredInToken = await this.jwtService.verifyAsync(token, {
+                secret: this.configService.get<'string'>('JWT_REFRESH_TOKEN_SECRET'),
+            });
 
+            const savedToken = await this.redisService.get(
+                `refreshToken:${payload.sub}`,
+            );
+
+            if (savedToken !== token) {
+                throw new ForbiddenException('Invalid refresh token');
+            }
+
+            const accessToken = await this.jwtService.signAsync({
+                sub: payload.sub,
+            });
+
+            return buildResponse({
+                message: 'Access token refreshed successfully',
+                data: {
+                    accessToken,
+                },
+            });
+        } catch (error) {
+            console.error('Error refreshing access token:', error);
+            throw new ForbiddenException('Invalid or expired refresh token');
+        }
+    }
 
 }
