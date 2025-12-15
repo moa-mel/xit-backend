@@ -1,19 +1,26 @@
-import { Controller, Get, Query } from "@nestjs/common";
+import { Controller, Get, Query, Res } from "@nestjs/common";
 import { GoogleService } from "../services";
-
+import { Response } from 'express';
 
 @Controller('auth/google')
 export class GoogleController {
-    constructor(private googleService: GoogleService) {}
+    constructor(private googleService: GoogleService) { }
 
     @Get('url')
-    getGoogleAuthUrl(){
-        return this.googleService.getAuthUrl();
+    async getGoogleAuthUrl(@Res() res: Response) {
+        const url = await this.googleService.generateAuthUrl();
+        return res.redirect(url);
     }
 
-@Get('callback')
-async googleLogin(@Query('code') code: string) {
-    await this.googleService.handleGoogleCallback(code);
-}
+
+    @Get('callback')
+    async googleLogin(
+        @Query('code') code: string,
+        @Res() res: Response,
+    ) {
+        const result = await this.googleService.handleGoogleCallback(code);
+        return res.redirect(result.data.redirectUrl);
+    }
+
 
 }

@@ -14,7 +14,7 @@ export class GoogleService {
     constructor(
         private configService: ConfigService,
         private authService: AuthService,
-        private prisma: PrismaService, 
+        private prisma: PrismaService,
     ) {
         this.oauth2Client = new OAuth2Client(
             this.configService.get('GOOGLE_CLIENT_ID'),
@@ -23,16 +23,14 @@ export class GoogleService {
         );
     }
 
-    async getAuthUrl(): Promise<ApiResponse<{ url: string }>> {
+    async generateAuthUrl(): Promise<string> {
         const url = this.oauth2Client.generateAuthUrl({
             access_type: 'offline',
+            prompt: 'consent',
             scope: ['profile', 'email'],
         });
 
-        return buildResponse({
-            message: 'Google auth URL generated',
-            data: { url },
-        });
+        return url;
     }
 
     async handleGoogleCallback(code: string) {
