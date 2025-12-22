@@ -103,7 +103,12 @@ export class AuthService {
     }
 
     async verifyEmail(options: VerifyEmailDto, identifier: string) {
-        const storedOtp = await this.redisService.get(`otp:${identifier}`);
+        const otpKey =
+            options.type === 'reset'
+                ? `resetOtp:${identifier}`
+                : `otp:${identifier}`;
+
+        const storedOtp = await this.redisService.get(otpKey);
 
         if (!storedOtp || storedOtp.trim() !== options.otp.trim()) {
             throw new Error("Invalid or expired OTP");
@@ -113,10 +118,25 @@ export class AuthService {
             where: { identifier }
         });
 
-        if (!user) {
-            throw new Error("User not found");
+        if (!user) throw new Error("User not found");
+
+        if (options.type === 'reset') {
+            // Allow password reset
+            await this.redisService.set(
+                `resetAllowed:${identifier}`,
+                user.id.toString(),
+                'EX',
+                10 * 60
+            );
+
+            await this.redisService.del(otpKey);
+
+            return buildResponse({
+                message: "OTP verified. You can now reset your password."
+            });
         }
 
+        // SIGNUP verification
         await this.prisma.user.update({
             where: { id: user.id },
             data: {
@@ -125,7 +145,7 @@ export class AuthService {
             }
         });
 
-        await this.redisService.del(`otp:${identifier}`);
+        await this.redisService.del(otpKey);
 
         return buildResponse({
             message: "Email verified successfully"
@@ -221,11 +241,14 @@ export class AuthService {
 
         await this.emailService.sendPasswordResetOTP(user.firstName, user.email, otp);
 
-        return buildResponse({ message: "Password reset OTP sent to your email" });
+        return buildResponse({
+            message: "Password reset OTP sent to your email",
+            data: { identifier: user.identifier }
+        });
     }
 
     async resetPassword(options: ResetPasswordDto, identifier: string) {
-        if (options.password !== options.confirmPassword) throw new Error('Passwords do not match');
+        if (options.password.trim() !== options.confirmPassword.trim()) throw new Error('Passwords do not match');
 
         // Get userId from Redis
         const userIdStr = await this.redisService.get(`resetAllowed:${identifier}`);
@@ -243,7 +266,9 @@ export class AuthService {
         // Clean up
         await this.redisService.del(`resetAllowed:${identifier}`);
 
-        return buildResponse({ message: "Password reset successfully" });
+        return buildResponse({
+            message: "Password reset successfully"
+        });
     }
 
     async refreshAccessToken(token: string) {

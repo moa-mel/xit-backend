@@ -1,4 +1,10 @@
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, IsString } from 'class-validator';
+
+
+export enum VerificationType {
+    SIGNUP = 'signup',
+    RESET = 'reset',
+}
 
 export class SignUpDto {
     @IsString()
@@ -17,6 +23,9 @@ export class SignUpDto {
 }
 
 export class VerifyEmailDto {
+
+    @IsEnum(VerificationType)
+    type: VerificationType;
 
     @IsString()
     @IsNotEmpty()
