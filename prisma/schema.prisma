@@ -12,19 +12,110 @@ datasource db {
   provider = "postgresql"
 }
 
+enum ChatType {
+  DM
+  LIVESTREAM
+}
+
 model User {
-  id        Int      @id @default(autoincrement())
-  identifier String  @unique
-  firstName String
-  lastName  String
-  email     String   @unique
-  password  String
-
-  isVerified      Boolean @default(false)
+  id              Int       @id @default(autoincrement())
+  identifier      String    @unique
+  firstName       String
+  lastName        String
+  email           String    @unique
+  password        String
+  isVerified      Boolean   @default(false)
   emailVerifiedAt DateTime?
+  googleId        String?   @unique
+  picture         String?
 
-  googleId         String?   @unique 
-  picture          String?   
-  
+  liveStreams      LiveStream[]
+  videos           Video[]
+  sentMessages     Message[]         @relation("MessageSender")
+  chatParticipants ChatParticipant[]
+  notifications    Notification[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LiveStream {
+  id         Int       @id @default(autoincrement())
+  identifier String    @unique
+  title      String
+  isLive     Boolean   @default(false)
+  startTime  DateTime
+  endTime    DateTime?
+
+  userId   Int
+  user     User      @relation(fields: [userId], references: [id])
+  messages Message[] @relation("LiveStreamMessages")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Video {
+  id         Int    @id @default(autoincrement())
+  identifier String @unique
+  title      String
+  userId     Int
+  user       User   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Chat {
+  id           Int               @id @default(autoincrement())
+  identifier   String            @unique
+  type         ChatType          @default(DM)
+  liveStreamId Int?
+  messages     Message[]
+  participants ChatParticipant[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ChatParticipant {
+  id     Int @id @default(autoincrement())
+  chatId Int
+  userId Int
+
+  chat     Chat     @relation(fields: [chatId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+  joinedAt DateTime @default(now())
+
+  @@unique([chatId, userId])
+}
+
+model Message {
+  id         Int    @id @default(autoincrement())
+  identifier String @unique
+  content    String
+  senderId   Int
+  sender     User   @relation("MessageSender", fields: [senderId], references: [id])
+  chatId     Int? // For DMs
+
+  chat         Chat? @relation(fields: [chatId], references: [id])
+  liveStreamId Int? // For live stream messages
+
+  liveStream LiveStream? @relation("LiveStreamMessages", fields: [liveStreamId], references: [id])
+  isRead     Boolean     @default(false)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+model Notification {
+  id         Int    @id @default(autoincrement())
+  identifier String @unique
+
+  title       String
+  description String
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
   createdAt DateTime @default(now())
 }
