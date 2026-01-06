@@ -31,12 +31,15 @@ model User {
 
   liveStreams      LiveStream[]
   videos           Video[]
+  podcasts         PodCast[]
   sentMessages     Message[]         @relation("MessageSender")
   chatParticipants ChatParticipant[]
   notifications    Notification[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([email])
 }
 
 model LiveStream {
@@ -48,22 +51,47 @@ model LiveStream {
   endTime    DateTime?
 
   userId   Int
-  user     User      @relation(fields: [userId], references: [id])
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages Message[] @relation("LiveStreamMessages")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([isLive])
 }
 
 model Video {
-  id         Int    @id @default(autoincrement())
-  identifier String @unique
-  title      String
-  userId     Int
-  user       User   @relation(fields: [userId], references: [id])
+  id           Int     @id @default(autoincrement())
+  identifier   String  @unique
+  title        String
+  videoUrl     String
+  thumbnailUrl String?
+  duration     Int? // in seconds
+  userId       Int
+  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model PodCast {
+  id           Int     @id @default(autoincrement())
+  identifier   String  @unique
+  title        String
+  description  String?
+  audioUrl     String
+  thumbnailUrl String?
+  duration     Int? // in seconds
+  userId       Int
+  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model Chat {
@@ -83,11 +111,12 @@ model ChatParticipant {
   chatId Int
   userId Int
 
-  chat     Chat     @relation(fields: [chatId], references: [id])
-  user     User     @relation(fields: [userId], references: [id])
+  chat     Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   joinedAt DateTime @default(now())
 
   @@unique([chatId, userId])
+  @@index([userId])
 }
 
 model Message {
@@ -95,16 +124,20 @@ model Message {
   identifier String @unique
   content    String
   senderId   Int
-  sender     User   @relation("MessageSender", fields: [senderId], references: [id])
-  chatId     Int? // For DMs
+  sender     User   @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  chatId     Int?
 
-  chat         Chat? @relation(fields: [chatId], references: [id])
-  liveStreamId Int? // For live stream messages
+  chat         Chat? @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  liveStreamId Int?
 
-  liveStream LiveStream? @relation("LiveStreamMessages", fields: [liveStreamId], references: [id])
+  liveStream LiveStream? @relation("LiveStreamMessages", fields: [liveStreamId], references: [id], onDelete: Cascade)
   isRead     Boolean     @default(false)
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
+
+  @@index([chatId])
+  @@index([liveStreamId])
+  @@index([senderId])
 }
 
 model Notification {
@@ -113,9 +146,13 @@ model Notification {
 
   title       String
   description String
+  isRead      Boolean @default(false)
 
   userId Int
-  user   User @relation(fields: [userId], references: [id])
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([isRead])
 }

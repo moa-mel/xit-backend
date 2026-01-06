@@ -9,4 +9,4 @@ import { PodCastService } from "./services";
   controllers: [ PodCastController],
   exports: [],
 })
-export class PodCastodule {}
+export class PodCastModule {}
