@@ -17,6 +17,12 @@ enum ChatType {
   LIVESTREAM
 }
 
+enum NotificationType {
+  LIVESTREAM
+  PODCAST
+  GENERAL
+}
+
 model User {
   id              Int       @id @default(autoincrement())
   identifier      String    @unique
@@ -43,22 +49,30 @@ model User {
 }
 
 model LiveStream {
-  id         Int       @id @default(autoincrement())
-  identifier String    @unique
-  title      String
-  isLive     Boolean   @default(false)
-  startTime  DateTime
-  endTime    DateTime?
+  id           Int       @id @default(autoincrement())
+  identifier   String    @unique
+  title        String
+  isLive       Boolean   @default(false)
+  isScheduled  Boolean   @default(false) // New: Is this a scheduled stream?
+  scheduledFor DateTime? // New: When the stream is scheduled for
+  streamUrl    String?
+  startTime    DateTime // Actual start time (when user goes live)
+  endTime      DateTime?
 
   userId   Int
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages Message[] @relation("LiveStreamMessages")
+
+  recordedVideoId Int?           @unique
+  recordedVideo   Video?         @relation("StreamRecording", fields: [recordedVideoId], references: [id])
+  notifications   Notification[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([isLive])
+  @@index([isScheduled])
 }
 
 model Video {
@@ -68,25 +82,32 @@ model Video {
   videoUrl     String
   thumbnailUrl String?
   duration     Int? // in seconds
-  userId       Int
-  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isRecording  Boolean @default(false) // Is this from a live stream?
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Reverse relation for recorded streams
+  sourceStream LiveStream? @relation("StreamRecording")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+  @@index([isRecording])
 }
 
 model PodCast {
-  id           Int     @id @default(autoincrement())
-  identifier   String  @unique
-  title        String
-  description  String?
-  audioUrl     String
-  thumbnailUrl String?
-  duration     Int? // in seconds
-  userId       Int
-  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            Int            @id @default(autoincrement())
+  identifier    String         @unique
+  title         String
+  description   String?
+  audioUrl      String
+  thumbnailUrl  String?
+  duration      Int? // in seconds
+  userId        Int
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notifications Notification[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -95,12 +116,13 @@ model PodCast {
 }
 
 model Chat {
-  id           Int               @id @default(autoincrement())
-  identifier   String            @unique
-  type         ChatType          @default(DM)
-  liveStreamId Int?
-  messages     Message[]
-  participants ChatParticipant[]
+  id            Int               @id @default(autoincrement())
+  identifier    String            @unique
+  type          ChatType          @default(DM)
+  liveStreamId  Int?
+  messages      Message[]
+  participants  ChatParticipant[]
+  notifications Notification[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -146,13 +168,26 @@ model Notification {
 
   title       String
   description String
-  isRead      Boolean @default(false)
+  type        NotificationType @default(GENERAL)
+  isRead      Boolean          @default(false)
 
   userId Int
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  liveStreamId Int?
+  liveStream   LiveStream? @relation(fields: [liveStreamId], references: [id], onDelete: Cascade)
+
+  podcastId Int?
+  podcast   PodCast? @relation(fields: [podcastId], references: [id], onDelete: Cascade)
+
+  chatId Int?
+  chat   Chat? @relation(fields: [chatId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
   @@index([userId])
   @@index([isRead])
+  @@index([liveStreamId])
+  @@index([podcastId])
+  @@index([chatId])
 }

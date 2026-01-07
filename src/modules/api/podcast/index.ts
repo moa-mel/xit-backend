@@ -1,12 +1,20 @@
 import { Module } from "@nestjs/common";
 import { PodCastController } from "./controllers";
 import { PodCastService } from "./services";
+import { BullModule } from "@nestjs/bull";
+import { BULL_QUEUES } from "@/bull/constants";
+import { NotificationModule } from "../notification";
 
 
 @Module({
-  imports: [ ],
+  imports: [
+    NotificationModule,
+    BullModule.registerQueue({
+      name: BULL_QUEUES.NOTIFICATION,
+    }),
+  ],
   providers: [PodCastService],
-  controllers: [ PodCastController],
-  exports: [],
+  controllers: [PodCastController],
+  exports: [BullModule],
 })
-export class PodCastModule {}
+export class PodCastModule { }

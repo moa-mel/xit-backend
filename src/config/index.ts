@@ -54,3 +54,7 @@ export const jwtExpiresIn: string = process.env.JWT_SECRET_EXPIRES;
 
 export const refreshTokenExpiresIn: string =
   process.env.REFRESH_JWT_SECRET_EXPIRES;
+
+export const redisHost: string = process.env.REDIS_HOST;
+export const redisPassword: string = process.env.REDIS_PASSWORD;
+export const redisPort: number = parseInt(process.env.REDIS_PORT ?? '10359');
