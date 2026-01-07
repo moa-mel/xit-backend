@@ -56,7 +56,7 @@ model LiveStream {
   isScheduled  Boolean   @default(false) // New: Is this a scheduled stream?
   scheduledFor DateTime? // New: When the stream is scheduled for
   streamUrl    String?
-  startTime    DateTime // Actual start time (when user goes live)
+  startTime    DateTime? // Actual start time (when user goes live)
   endTime      DateTime?
 
   userId   Int

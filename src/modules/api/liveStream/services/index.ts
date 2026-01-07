@@ -9,6 +9,7 @@ import { NotificationQueue } from "../../notification/queues/interfaces";
 import { Queue } from "bull";
 import { BULL_QUEUES } from "@/bull/constants";
 import { InjectQueue } from "@nestjs/bull";
+import { NotificationJobType } from "../../notification/interfaces";
 
 
 export class LiveStreamService {
@@ -43,13 +44,10 @@ export class LiveStreamService {
         })
 
         await this.notificationQueue.add(NotificationQueue.NOTIFICATION_CREATE, {
-            identifier: generateId({ type: 'identifier' }),
-            title: 'Live Stream Started',
-            description: `A live stream just started`,
-            type: NotificationType.LIVESTREAM,
-            userId: user.id,
+            type: NotificationJobType.LIVESTREAM,
             liveStreamId: stream.id,
         });
+
 
         return buildResponse({
             message: 'livestream created successfully',
@@ -83,6 +81,12 @@ export class LiveStreamService {
                 startTime: new Date()
             }
         })
+
+        await this.notificationQueue.add(NotificationQueue.NOTIFICATION_CREATE, {
+            type: NotificationJobType.LIVESTREAM,
+            liveStreamId: stream.id,
+        });
+
 
         return buildResponse({
             message: 'Scheduled Stream started successfully',
