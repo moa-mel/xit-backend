@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import { join } from 'path';
 import { config } from 'dotenv';
+import { serviceAccount } from '@/config/constant';
 
 config();
 
@@ -13,7 +14,7 @@ export class FirebaseService {
     if (!admin.apps.length) {
       admin.initializeApp({
         credential: admin.credential.cert(
-          join(process.cwd(), process.env.GOOGLE_APPLICATION_CREDENTIALS)
+          serviceAccount as admin.ServiceAccount
         ),
         databaseURL: process.env.FIREBASE_DATABASE_URL,
       });

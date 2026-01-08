@@ -102,9 +102,11 @@ model PodCast {
   identifier    String         @unique
   title         String
   description   String?
+  picture       String?
   audioUrl      String
   thumbnailUrl  String?
   duration      Int? // in seconds
+  date          DateTime
   userId        Int
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   notifications Notification[]
