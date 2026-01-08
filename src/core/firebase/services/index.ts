@@ -8,4 +8,21 @@ config();
 @Injectable()
 export class FirebaseService {
   private db: admin.database.Database;
+
+  constructor() {
+    if (!admin.apps.length) {
+      admin.initializeApp({
+        credential: admin.credential.cert(
+          join(process.cwd(), process.env.GOOGLE_APPLICATION_CREDENTIALS)
+        ),
+        databaseURL: process.env.FIREBASE_DATABASE_URL,
+      });
+    }
+
+    this.db = admin.database();
+  }
+
+  async sendRealtimeUpdate(path: string, data: any): Promise<void> {
+    await this.db.ref(path).push(data);
+  }
 }
