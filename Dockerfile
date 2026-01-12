@@ -3,6 +3,9 @@
 FROM node:22-alpine AS build
 WORKDIR /usr/src/app
 
+# 👇 Fake DB URL ONLY for Prisma Client generation
+ENV DATABASE_URL="postgresql://user:pass@localhost:5432/dummy"
+
 COPY package*.json ./
 RUN npm install
 
