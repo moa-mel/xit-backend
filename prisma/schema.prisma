@@ -38,42 +38,63 @@ model User {
   liveStreams      LiveStream[]
   videos           Video[]
   podcasts         PodCast[]
-  sentMessages     Message[]         @relation("MessageSender")
+  sentMessages     Message[]          @relation("MessageSender")
   chatParticipants ChatParticipant[]
   notifications    Notification[]
+  liveStreamViewer LiveStreamViewer[]
+  listener         Listener[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 
   @@index([email])
 }
 
 model LiveStream {
-  id           Int       @id @default(autoincrement())
-  identifier   String    @unique
-  title        String
-  isLive       Boolean   @default(false)
-  isScheduled  Boolean   @default(false) // New: Is this a scheduled stream?
-  scheduledFor DateTime? // New: When the stream is scheduled for
-  streamUrl    String?
-  startTime    DateTime? // Actual start time (when user goes live)
-  endTime      DateTime?
+  id         Int       @id @default(autoincrement())
+  identifier String    @unique
+  title      String
+  isLive     Boolean   @default(false)
+  startTime  DateTime? // Actual start time (when user goes live)
+  endTime    DateTime?
 
   userId   Int
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages Message[] @relation("LiveStreamMessages")
 
-  recordedVideoId Int?           @unique
-  recordedVideo   Video?         @relation("StreamRecording", fields: [recordedVideoId], references: [id])
-  notifications   Notification[]
+  recordedVideoId  Int?               @unique
+  recordedVideo    Video?             @relation("StreamRecording", fields: [recordedVideoId], references: [id])
+  notifications    Notification[]
+  liveStreamViewer LiveStreamViewer[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  streamKey   String? @unique
+  playbackUrl String?
+
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 
   @@index([userId])
   @@index([isLive])
-  @@index([isScheduled])
 }
+
+model LiveStreamViewer {
+  id           Int      @id @default(autoincrement())
+  identifier   String   @unique
+  liveStreamId Int
+  userId       Int?
+  sessionId    String?
+  joinedAt     DateTime @default(now())
+
+  liveStream    LiveStream      @relation(fields: [liveStreamId], references: [id], onDelete: Cascade)
+  user          User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([liveStreamId, userId])
+  @@unique([liveStreamId, sessionId])
+  @@index([liveStreamId])
+  @@index([userId])
+  @@index([joinedAt])
+}
+
 
 model Video {
   id           Int     @id @default(autoincrement())
@@ -110,10 +131,28 @@ model PodCast {
   userId        Int
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   notifications Notification[]
+  listener      Listener[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([userId])
+}
+
+model Listener {
+  id         Int      @id @default(autoincrement())
+  identifier String   @unique
+  podcastId  Int
+  userId     Int?
+  sessionId  String?
+  joinedAt   DateTime @default(now())
+
+  podcast PodCast @relation(fields: [podcastId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([podcastId, userId])
+  @@unique([podcastId, sessionId])
+  @@index([podcastId])
   @@index([userId])
 }
 

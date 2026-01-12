@@ -1,4 +1,4 @@
-import { IsEmail, IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 
 export enum VerificationType {
@@ -57,4 +57,20 @@ export class ResetPasswordDto {
     @IsString()
     @IsNotEmpty()
     confirmPassword: string;
+}
+
+export class UpdateProfileDto{
+    @IsString()
+    @IsOptional()
+    firstName: string;
+
+    @IsString()
+    @IsOptional()
+    lastName: string;
+
+    @IsString()
+    @IsOptional()
+    picture: string;
+
+
 }

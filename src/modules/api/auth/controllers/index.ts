@@ -1,6 +1,6 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query, ValidationPipe } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Put, Query, ValidationPipe } from "@nestjs/common";
 import { AuthService } from "../services";
-import { ForgetPasswordDto, ResetPasswordDto, SignInDto, SignUpDto, VerifyEmailDto } from "../dtos";
+import { ForgetPasswordDto, ResetPasswordDto, SignInDto, SignUpDto, UpdateProfileDto, VerifyEmailDto } from "../dtos";
 
 @Controller({
   path: 'auth',
@@ -50,6 +50,12 @@ export class AuthController {
   @Post('reset-password/:identifier')
   async resetPassword(@Param('identifier') identifier: string, @Body(ValidationPipe) dto: ResetPasswordDto): Promise<ApiResponse> {
     return await this.authService.resetPassword(dto, identifier);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Put('user/:id')
+  async updateProfile(@Param('id') id: number, @Body(ValidationPipe) dto: UpdateProfileDto): Promise<ApiResponse> {
+    return await this.authService.updateProfile(dto, +id);
   }
 
 

@@ -3,7 +3,7 @@ import { CreateLiveStreamDto, EndLiveStreamDto } from "../dtos";
 import { NotificationType, User } from "@prisma/client";
 import { buildResponse, generateId } from "@/utils";
 import { HttpStatus } from "@nestjs/common";
-import { InvalidScheduleException, ScheduleNotFoundException, StreamNotFoundException } from "../errors";
+import { StreamNotFoundException } from "../errors";
 import { UserNotFoundException } from "../../auth/errors";
 import { NotificationQueue } from "../../notification/queues/interfaces";
 import { Queue } from "bull";
@@ -19,26 +19,14 @@ export class LiveStreamService {
     ) { }
 
     async createLiveStream(user: User, options: CreateLiveStreamDto) {
-        if (options.isScheduled && !options.scheduledFor) {
-            throw new ScheduleNotFoundException('scheduledFor is required for scheduled streams', HttpStatus.BAD_REQUEST)
-        }
 
-        if (options.isScheduled) {
-            const scheduledDate = new Date(options.scheduledFor);
-            if (scheduledDate <= new Date()) {
-                throw new InvalidScheduleException('scheduledFor must be in the future', HttpStatus.BAD_REQUEST);
-            }
-        }
 
         const stream = await this.prisma.liveStream.create({
             data: {
                 identifier: generateId({ type: 'identifier' }),
                 title: options.title,
-                streamUrl: options.streamUrl,
-                isScheduled: options.isScheduled || false,
-                scheduledFor: options.scheduledFor ? new Date(options.scheduledFor) : null,
-                isLive: options.isScheduled ? false : true, // Go live immediately if not scheduled
-                startTime: options.isScheduled ? null : new Date(),
+                isLive: true, // Go live immediately 
+                startTime: new Date(),
                 userId: user.id,
             }
         })
@@ -50,48 +38,9 @@ export class LiveStreamService {
 
 
         return buildResponse({
-            message: 'livestream created successfully',
+            message: 'livestream started successfully',
             data: stream,
         });
-
-    }
-
-    // For scheduled streams, call this when user clicks "Go Live"
-    async startScheduledStream(liveStreamId: number) {
-        const stream = await this.prisma.liveStream.findUnique({
-            where: {
-                id: liveStreamId
-            }
-        })
-
-        if (!stream.isScheduled) {
-            throw new StreamNotFoundException('This stream was not scheduled', HttpStatus.BAD_REQUEST);
-        }
-
-        if (stream.isLive) {
-            throw new StreamNotFoundException('Stream is already live', HttpStatus.BAD_REQUEST);
-        }
-
-        const updateStream = await this.prisma.liveStream.update({
-            where: {
-                id: liveStreamId
-            },
-            data: {
-                isLive: true,
-                startTime: new Date()
-            }
-        })
-
-        await this.notificationQueue.add(NotificationQueue.NOTIFICATION_CREATE, {
-            type: NotificationJobType.LIVESTREAM,
-            liveStreamId: stream.id,
-        });
-
-
-        return buildResponse({
-            message: 'Scheduled Stream started successfully',
-            data: updateStream
-        })
 
     }
 
@@ -130,6 +79,9 @@ export class LiveStreamService {
                     isRecording: true,
                     userId: user.id,
                     duration,
+                    sourceStream: {
+                        connect: { id: stream.id }
+                    }
                 },
             });
         }
@@ -151,29 +103,6 @@ export class LiveStreamService {
             message: 'Live stream ended successfully',
             data: updatedStream
         });
-    }
-
-    // Get upcoming scheduled streams
-    async getScheduledStreams(userId: number) {
-        const scheduledStreams = await this.prisma.liveStream.findMany({
-            where: {
-                userId,
-                isScheduled: true,
-                isLive: false,
-                scheduledFor: {
-                    gte: new Date(), // Future streams only
-                },
-            },
-            orderBy: {
-                scheduledFor: 'asc',
-            },
-        });
-
-        return buildResponse({
-            message: 'Scheduled Stream started successfully',
-            data: scheduledStreams
-        })
-
     }
 
     // Get currently live streams
@@ -201,6 +130,44 @@ export class LiveStreamService {
             message: 'Scheduled Stream started successfully',
             data: currentLiveStreams
         })
+
+    }
+
+    async JoinLiveStream(liveStreamId: number,
+        user?: User,
+        sessionId?: string) {
+        const stream = await this.prisma.liveStream.findUnique({
+            where: { id: liveStreamId },
+        });
+
+        if (!stream) {
+            throw new StreamNotFoundException('Stream not found', HttpStatus.NOT_FOUND);
+        }
+
+        if (!stream.isLive) {
+            throw new StreamNotFoundException('Stream is not live', HttpStatus.BAD_REQUEST);
+        }
+
+        await this.prisma.liveStreamViewer.upsert({
+            where: user
+                ? { liveStreamId_userId: { liveStreamId, userId: user.id } }
+                : { liveStreamId_sessionId: { liveStreamId, sessionId } },
+            update: {},
+            create: {
+                identifier: generateId({ type: 'identifier' }),
+                liveStreamId,
+                userId: user?.id,
+                sessionId,
+            },
+        });
+
+        return buildResponse({
+            message: 'Joined live stream successfully',
+            data: {
+                liveStreamId,
+                playbackUrl: stream.playbackUrl,
+            },
+        });
 
     }
 

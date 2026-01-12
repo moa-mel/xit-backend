@@ -1,16 +1,17 @@
 import { PrismaService } from '@/modules/core/prisma/services';
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ForbiddenException, HttpStatus, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import * as bcrypt from 'bcryptjs';
 import { refreshJwtSecret, refreshTokenExpiresIn } from '@/config';
 import { buildResponse, generateId } from '@/utils';
-import { ForgetPasswordDto, ResetPasswordDto, SignInDto, SignUpDto, VerifyEmailDto } from '../dtos';
+import { ForgetPasswordDto, ResetPasswordDto, SignInDto, SignUpDto, UpdateProfileDto, VerifyEmailDto } from '../dtos';
 import { LoginMeta } from '../interfaces';
 import { EmailService } from '../../email/services';
 import { DataStoredInToken } from '../interfaces/authenticated-request.interface';
 import { ConfigService } from '@nestjs/config';
+import { UserNotFoundException } from '../errors';
 
 export class AuthService {
     constructor(
@@ -118,7 +119,8 @@ export class AuthService {
             where: { identifier }
         });
 
-        if (!user) throw new Error("User not found");
+        if (!user)
+            throw new UserNotFoundException('User not found', HttpStatus.BAD_REQUEST);
 
         if (options.type === 'reset') {
             // Allow password reset
@@ -300,5 +302,31 @@ export class AuthService {
             throw new ForbiddenException('Invalid or expired refresh token');
         }
     }
+
+    async updateProfile(dto: UpdateProfileDto, userId: number) {
+        const user = await this.prisma.user.findUnique({ 
+            where: { 
+                id: userId 
+            } 
+        });
+        if (!user) {
+            throw new UserNotFoundException('User not found', HttpStatus.BAD_REQUEST);
+        }
+
+        const updatedUser = await this.prisma.user.update({
+            where: { id: userId },
+            data: {
+                firstName: dto.firstName ?? user.firstName,
+                lastName: dto.lastName ?? user.lastName,
+                picture: dto.picture ?? user.picture
+            }
+        });
+
+        return buildResponse({
+            message: 'Profile updated successfully',
+            data: updatedUser
+        });
+    }
+
 
 }

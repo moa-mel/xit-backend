@@ -26,12 +26,6 @@ export class LiveStreamController {
     return this.liveStreamService.createLiveStream(req.user.id, dto);
   }
 
-  // Start a scheduled stream
-  @Patch(':id/start')
-  async startScheduled(@Param('id') id: string) {
-    return this.liveStreamService.startScheduledStream(+id);
-  }
-
   // End any live stream
   @Patch(':id/end')
   async end(
@@ -40,12 +34,6 @@ export class LiveStreamController {
     @Body() dto: EndLiveStreamDto
   ) {
     return this.liveStreamService.endLiveStream(user, id, dto);
-  }
-
-  // Get user's scheduled streams
-  @Get('scheduled')
-  async getScheduled(@Request() req) {
-    return this.liveStreamService.getScheduledStreams(req.user.id);
   }
 
   // Get all currently live streams

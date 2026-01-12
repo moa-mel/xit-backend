@@ -6,19 +6,6 @@ export class CreateLiveStreamDto {
     @IsString()
     title: string
 
-    @IsOptional()
-    @IsBoolean()
-    isScheduled?: boolean;
-
-    // Only required if isScheduled = true
-    @IsOptional()
-    @IsDate()
-    @Type(() => Date)
-    scheduledFor?: string;
-
-    @IsOptional()
-    @IsString()
-    streamUrl?: string;
 }
 
 export class EndLiveStreamDto {
