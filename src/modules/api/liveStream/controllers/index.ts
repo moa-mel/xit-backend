@@ -21,7 +21,7 @@ export class LiveStreamController {
   constructor(private readonly liveStreamService: LiveStreamService) { }
 
   // Create stream (instant or scheduled)
-  @Post()
+  @Post('create')
   async create(@Request() req, @Body() dto: CreateLiveStreamDto) {
     return this.liveStreamService.createLiveStream(req.user.id, dto);
   }
@@ -41,4 +41,13 @@ export class LiveStreamController {
   async getLive() {
     return this.liveStreamService.getLiveStreams();
   }
+
+  @Post('join/:id')
+  async joinLiveStream(@Request() req, @Param('id') liveStreamId: number, @Body('sessionId') sessionId?: string
+  ) {
+    return this.liveStreamService.joinLiveStream(
+      +liveStreamId, req.user, sessionId
+    );
+  }
+
 }

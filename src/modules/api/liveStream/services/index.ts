@@ -133,7 +133,7 @@ export class LiveStreamService {
 
     }
 
-    async JoinLiveStream(liveStreamId: number,
+    async joinLiveStream(liveStreamId: number,
         user?: User,
         sessionId?: string) {
         const stream = await this.prisma.liveStream.findUnique({

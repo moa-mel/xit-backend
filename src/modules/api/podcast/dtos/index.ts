@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from "class-validator"
+import { IsNumber, IsOptional, IsString } from "class-validator"
 
 export class CreatePodCastDto {
     @IsString()
@@ -18,4 +18,13 @@ export class CreatePodCastDto {
     @IsOptional()
     date?: Date;
 }
+
+export class ListenToPodcastDto {
+    @IsNumber()
+    podcastId: number;
+
+    @IsString()
+    sessionId?: string;
+}
+
 
