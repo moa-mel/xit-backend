@@ -1,7 +1,9 @@
-import { Body, Controller, Post, Request, Get, ParseIntPipe, Param } from "@nestjs/common";
+import { Body, Controller, Post, Request, Get, ParseIntPipe, Param, UseGuards, Query } from "@nestjs/common";
 import { PodCastService } from "../services";
-import { CreatePodCastDto, ListenToPodcastDto } from "../dtos";
+import { CreatePodCastDto, ListenToPodcastDto, PaginationDto } from "../dtos";
+import { AuthGuard } from "../../auth/guards";
 
+@UseGuards(AuthGuard)
 @Controller({
   path: 'podcast',
 })
@@ -11,7 +13,7 @@ export class PodCastController {
 
   @Post('create')
   async create(@Request() req, @Body() dto: CreatePodCastDto) {
-    return this.podCastService.createPodcast(req.user.id, dto);
+    return this.podCastService.createPodcast(req.user, dto);
   }
 
   // Get podcast by id
@@ -22,9 +24,10 @@ export class PodCastController {
 
   // Get all podcasts
   @Get('all')
-  async getPodcast() {
-    return this.podCastService.getPodcast();
+  async getPodcast(@Query() dto: PaginationDto) {
+    return this.podCastService.getPodcast(dto);
   }
+
 
   // Listen to podcast
   @Post('listen/:id')

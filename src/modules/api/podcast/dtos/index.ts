@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsString } from "class-validator"
+import { IsBooleanString, IsNumber, IsNumberString, IsOptional, IsString } from "class-validator"
 
 export class CreatePodCastDto {
     @IsString()
@@ -27,4 +27,17 @@ export class ListenToPodcastDto {
     sessionId?: string;
 }
 
+export class PaginationDto {
+  @IsOptional()
+  @IsBooleanString()
+  pagination?: string;
+
+  @IsOptional()
+  @IsNumberString()
+  page?: string;
+
+  @IsOptional()
+  @IsNumberString()
+  limit?: string;
+}
 

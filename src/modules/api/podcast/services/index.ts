@@ -4,8 +4,8 @@ import { InjectQueue } from "@nestjs/bull";
 import { Queue } from "bull";
 import { buildResponse, generateId } from "@/utils";
 import { HttpStatus, Injectable } from "@nestjs/common";
-import { CreatePodCastDto } from "../dtos";
-import { User } from "@prisma/client";
+import { CreatePodCastDto, PaginationDto } from "../dtos";
+import { Prisma, User } from "@prisma/client";
 import { NotificationQueue } from "../../notification/queues/interfaces";
 import { NotificationJobType } from "../../notification/interfaces";
 import { PodCastNotFoundException, UserAndSessionNotFoundException } from "../errors";
@@ -60,35 +60,46 @@ export class PodCastService {
         });
     }
 
-    async getPodcast(page = 1, limit = 10) {
-        const skip = (page - 1) * limit;
+    async getPodcast(options: PaginationDto) {
+        const meta: Partial<PaginationMeta> = {};
 
-        const [podcasts, total] = await Promise.all([
-            this.prisma.podCast.findMany({
-                skip,
-                take: limit,
-                orderBy: { createdAt: 'desc' },
-                include: {
-                    user: true,
-                    _count: {
-                        select: { listener: true }
-                    }
-                }
-            }),
-            this.prisma.podCast.count(),
-        ]);
+        // Base query (no pagination yet)
+        const queryOptions: Prisma.PodCastFindManyArgs = {
+            orderBy: { createdAt: 'asc' },
+        };
+
+        // pagination comes as STRING from query: "true" | "false"
+        const isPaginated = options.pagination === 'true';
+
+        if (isPaginated) {
+            const page = Number(options.page) || 1;
+            const limit = Number(options.limit) || 10;
+            const skip = (page - 1) * limit;
+
+            queryOptions.skip = skip;
+            queryOptions.take = limit;
+
+            const totalCount = await this.prisma.podCast.count();
+
+            meta.totalCount = totalCount;
+            meta.page = page;
+            meta.perPage = limit;
+        }
+
+        const podCasts = await this.prisma.podCast.findMany(queryOptions);
+
+        const result = {
+            meta: meta,
+            records: podCasts
+        };
 
         return buildResponse({
             message: 'Podcasts fetched successfully',
             data: {
-                total,
-                page,
-                limit,
-                podcasts,
-            }
+                result
+            },
         });
     }
-
 
     async listenToPodcast(
         podcastId: number,
