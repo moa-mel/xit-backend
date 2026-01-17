@@ -2,7 +2,7 @@ import { PrismaService } from "@/modules/core/prisma/services";
 import { CreateLiveStreamDto, EndLiveStreamDto } from "../dtos";
 import { NotificationType, User } from "@prisma/client";
 import { buildResponse, generateId } from "@/utils";
-import { HttpStatus } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { StreamNotFoundException } from "../errors";
 import { UserNotFoundException } from "../../auth/errors";
 import { NotificationQueue } from "../../notification/queues/interfaces";
@@ -11,7 +11,7 @@ import { BULL_QUEUES } from "@/bull/constants";
 import { InjectQueue } from "@nestjs/bull";
 import { NotificationJobType } from "../../notification/interfaces";
 
-
+@Injectable()
 export class LiveStreamService {
     constructor(
         private prisma: PrismaService,
@@ -19,7 +19,6 @@ export class LiveStreamService {
     ) { }
 
     async createLiveStream(user: User, options: CreateLiveStreamDto) {
-
 
         const stream = await this.prisma.liveStream.create({
             data: {

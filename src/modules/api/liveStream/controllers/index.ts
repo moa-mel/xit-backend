@@ -6,13 +6,16 @@ import {
   Body,
   Param,
   Request,
-  ParseIntPipe
+  ParseIntPipe,
+  UseGuards
 } from '@nestjs/common';
 import { LiveStreamService } from "../services";
 import { CreateLiveStreamDto, EndLiveStreamDto } from "../dtos";
 import { User } from '@prisma/client';
 import { GetUser } from '../../user/decorators';
+import { AuthGuard } from '../../auth/guards';
 
+@UseGuards(AuthGuard)
 @Controller({
   path: 'live-stream',
 })
@@ -23,8 +26,9 @@ export class LiveStreamController {
   // Create stream (instant or scheduled)
   @Post('create')
   async create(@Request() req, @Body() dto: CreateLiveStreamDto) {
-    return this.liveStreamService.createLiveStream(req.user.id, dto);
+    return this.liveStreamService.createLiveStream(req.user, dto);
   }
+
 
   // End any live stream
   @Patch(':id/end')

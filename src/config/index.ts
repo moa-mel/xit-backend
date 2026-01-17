@@ -16,7 +16,6 @@ const runtimeEnvironment: RequiredEnvironment[] = [
     name: 'ALLOWED_DOMAINS',
     type: RequiredEnvironmentTypes.String,
   },
-
   {
     name: 'JWT_SECRET',
     type: RequiredEnvironmentTypes.String,
@@ -31,6 +30,18 @@ const runtimeEnvironment: RequiredEnvironment[] = [
   },
   {
     name: 'REFRESH_JWT_SECRET_EXPIRES',
+    type: RequiredEnvironmentTypes.String,
+  },
+  {
+    name: 'REDIS_HOST',
+    type: RequiredEnvironmentTypes.String,
+  },
+  {
+    name: 'REDIS_PORT',
+    type: RequiredEnvironmentTypes.Number,
+  },
+  {
+    name: 'REDIS_PASSWORD',
     type: RequiredEnvironmentTypes.String,
   },
 ];
@@ -48,13 +59,14 @@ export const frontendDevOrigin = [/^http:\/\/localhost:\d+$/];
 
 export const jwtSecret: string = process.env.JWT_SECRET;
 
+export const redisHost = process.env.REDIS_HOST;
+export const redisPort = parseInt(process.env.REDIS_PORT || '6379', 10);
+export const redisPassword = process.env.REDIS_PASSWORD;
+export const redisUsername = process.env.REDIS_USERNAME || 'default';
+
 export const refreshJwtSecret: string = process.env.REFRESH_JWT_SECRET;
 
 export const jwtExpiresIn: string = process.env.JWT_SECRET_EXPIRES;
 
 export const refreshTokenExpiresIn: string =
   process.env.REFRESH_JWT_SECRET_EXPIRES;
-
-export const redisHost: string = process.env.REDIS_HOST;
-export const redisPassword: string = process.env.REDIS_PASSWORD;
-export const redisPort: number = parseInt(process.env.REDIS_PORT ?? '10359');

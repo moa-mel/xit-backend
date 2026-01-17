@@ -53,6 +53,7 @@ export class AuthGuard implements CanActivate {
           secret: jwtSecret,
         },
       );
+      console.log('JWT payload:', payload);
 
       const user = await this.prisma.user.findUnique({
         where: {
@@ -93,7 +94,8 @@ export class AuthGuard implements CanActivate {
   }
 
   private extractTokenFromHeader(request: Request): string | undefined {
-    const [type, token] = request.headers.authorization?.split(' ') ?? [];
-    return type === 'Bearer' ? token : undefined;
-  }
+  const [type, token] = request.headers.authorization?.split(' ') ?? [];
+  return type === 'Bearer' ? token : undefined;
+}
+
 }

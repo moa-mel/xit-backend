@@ -3,13 +3,14 @@ import { PrismaService } from "@/modules/core/prisma/services";
 import { InjectQueue } from "@nestjs/bull";
 import { Queue } from "bull";
 import { buildResponse, generateId } from "@/utils";
-import { HttpStatus } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { CreatePodCastDto } from "../dtos";
 import { User } from "@prisma/client";
 import { NotificationQueue } from "../../notification/queues/interfaces";
 import { NotificationJobType } from "../../notification/interfaces";
 import { PodCastNotFoundException, UserAndSessionNotFoundException } from "../errors";
 
+@Injectable()
 export class PodCastService {
     constructor(
         private prisma: PrismaService,
@@ -58,7 +59,7 @@ export class PodCastService {
             data: podcast,
         });
     }
-    
+
     async getPodcast(page = 1, limit = 10) {
         const skip = (page - 1) * limit;
 
