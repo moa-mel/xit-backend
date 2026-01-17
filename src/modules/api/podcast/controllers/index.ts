@@ -16,17 +16,19 @@ export class PodCastController {
     return this.podCastService.createPodcast(req.user, dto);
   }
 
+  // Get all podcasts
+  @Get('all')
+  async getPodcast(@Query() dto: PaginationDto) {
+    return this.podCastService.getPodcast(dto);
+  }
+
   // Get podcast by id
   @Get(':id')
   async getPodcastById(@Param('id', ParseIntPipe) id: number) {
     return this.podCastService.getPodcastById(id);
   }
 
-  // Get all podcasts
-  @Get('all')
-  async getPodcast(@Query() dto: PaginationDto) {
-    return this.podCastService.getPodcast(dto);
-  }
+
 
 
   // Listen to podcast

@@ -41,26 +41,7 @@ export class PodCastService {
         });
     }
 
-    async getPodcastById(podcastId: number) {
-        const podcast = await this.prisma.podCast.findUnique({
-            where: { id: podcastId },
-            include: {
-                user: true,
-                listener: true,
-            }
-        });
-
-        if (!podcast) {
-            throw new PodCastNotFoundException('Podcast not found', HttpStatus.NOT_FOUND);
-        }
-
-        return buildResponse({
-            message: 'Podcast fetched successfully',
-            data: podcast,
-        });
-    }
-
-    async getPodcast(options: PaginationDto) {
+     async getPodcast(options: PaginationDto) {
         const meta: Partial<PaginationMeta> = {};
 
         // Base query (no pagination yet)
@@ -98,6 +79,25 @@ export class PodCastService {
             data: {
                 result
             },
+        });
+    }
+
+    async getPodcastById(podcastId: number) {
+        const podcast = await this.prisma.podCast.findUnique({
+            where: { id: podcastId },
+            include: {
+                user: true,
+                listener: true,
+            }
+        });
+
+        if (!podcast) {
+            throw new PodCastNotFoundException('Podcast not found', HttpStatus.NOT_FOUND);
+        }
+
+        return buildResponse({
+            message: 'Podcast fetched successfully',
+            data: podcast,
         });
     }
 
