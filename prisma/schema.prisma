@@ -23,6 +23,13 @@ enum NotificationType {
   GENERAL
 }
 
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  FILE
+}
+
 model User {
   id              Int       @id @default(autoincrement())
   identifier      String    @unique
