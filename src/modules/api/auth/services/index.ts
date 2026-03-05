@@ -6,7 +6,7 @@ import Redis from 'ioredis';
 import * as bcrypt from 'bcryptjs';
 import { refreshJwtSecret, refreshTokenExpiresIn } from '@/config';
 import { buildResponse, generateId } from '@/utils';
-import { ForgetPasswordDto, ResetPasswordDto, SignInDto, SignUpDto, UpdateProfileDto, VerifyEmailDto } from '../dtos';
+import { ForgetPasswordDto, ResetPasswordDto, SignInDto, SignUpDto, VerifyEmailDto } from '../dtos';
 import { LoginMeta } from '../interfaces';
 import { EmailService } from '../../email/services';
 import { DataStoredInToken } from '../interfaces/authenticated-request.interface';
@@ -301,31 +301,6 @@ export class AuthService {
             console.error('Error refreshing access token:', error);
             throw new ForbiddenException('Invalid or expired refresh token');
         }
-    }
-
-    async updateProfile(dto: UpdateProfileDto, userId: number) {
-        const user = await this.prisma.user.findUnique({ 
-            where: { 
-                id: userId 
-            } 
-        });
-        if (!user) {
-            throw new UserNotFoundException('User not found', HttpStatus.BAD_REQUEST);
-        }
-
-        const updatedUser = await this.prisma.user.update({
-            where: { id: userId },
-            data: {
-                firstName: dto.firstName ?? user.firstName,
-                lastName: dto.lastName ?? user.lastName,
-                picture: dto.picture ?? user.picture
-            }
-        });
-
-        return buildResponse({
-            message: 'Profile updated successfully',
-            data: updatedUser
-        });
     }
 
 

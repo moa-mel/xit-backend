@@ -5,10 +5,11 @@ import { PodCastModule } from "./podcast";
 import { LiveStreamModule } from "./liveStream";
 import { ChatModule } from "./chat";
 import { AIDetectionModule } from "./aiDetection";
+import { UserModule } from "./user";
 
 @Module({
   imports: [
-    AuthModule, EmailModule, PodCastModule, LiveStreamModule, ChatModule, AIDetectionModule
+    AuthModule, UserModule, EmailModule, PodCastModule, LiveStreamModule, ChatModule, AIDetectionModule
   ],
 })
 export class ApiModule {}

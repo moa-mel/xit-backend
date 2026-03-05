@@ -58,19 +58,3 @@ export class ResetPasswordDto {
     @IsNotEmpty()
     confirmPassword: string;
 }
-
-export class UpdateProfileDto{
-    @IsString()
-    @IsOptional()
-    firstName: string;
-
-    @IsString()
-    @IsOptional()
-    lastName: string;
-
-    @IsString()
-    @IsOptional()
-    picture: string;
-
-
-}
