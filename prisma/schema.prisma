@@ -30,6 +30,27 @@ enum MessageType {
   FILE
 }
 
+enum AIDetectionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum ContentType {
+  VIDEO
+  AUDIO
+  IMAGE
+  LIVESTREAM
+  PODCAST
+}
+
+enum AIDetectionResult {
+  AI_GENERATED
+  HUMAN_CREATED
+  INCONCLUSIVE
+}
+
 model User {
   id              Int       @id @default(autoincrement())
   identifier      String    @unique
@@ -50,6 +71,7 @@ model User {
   notifications    Notification[]
   liveStreamViewer LiveStreamViewer[]
   listener         Listener[]
+  aiDetections     AIDetection[]
 
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
@@ -62,7 +84,7 @@ model LiveStream {
   identifier String    @unique
   title      String
   isLive     Boolean   @default(false)
-  startTime  DateTime? // Actual start time (when user goes live)
+  startTime  DateTime? 
   endTime    DateTime?
 
   userId   Int
@@ -73,6 +95,7 @@ model LiveStream {
   recordedVideo    Video?             @relation("StreamRecording", fields: [recordedVideoId], references: [id])
   notifications    Notification[]
   liveStreamViewer LiveStreamViewer[]
+  aiDetections     AIDetection[]
 
   streamKey   String? @unique
   playbackUrl String?
@@ -109,14 +132,14 @@ model Video {
   title        String
   videoUrl     String
   thumbnailUrl String?
-  duration     Int? // in seconds
-  isRecording  Boolean @default(false) // Is this from a live stream?
+  duration     Int? 
+  isRecording  Boolean @default(false) 
 
   userId Int
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Reverse relation for recorded streams
   sourceStream LiveStream? @relation("StreamRecording")
+  aiDetections AIDetection[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -139,6 +162,7 @@ model PodCast {
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   notifications Notification[]
   listener      Listener[]
+  aiDetections  AIDetection[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -238,4 +262,47 @@ model Notification {
   @@index([liveStreamId])
   @@index([podcastId])
   @@index([chatId])
+}
+
+model AIDetection {
+  id                Int                  @id @default(autoincrement())
+  identifier        String               @unique
+  
+  contentType       ContentType
+  contentUrl        String
+  contentTitle      String?
+  
+  videoId           Int?
+  video             Video?               @relation(fields: [videoId], references: [id], onDelete: SetNull)
+  
+  podcastId         Int?
+  podcast           PodCast?             @relation(fields: [podcastId], references: [id], onDelete: SetNull)
+  
+  liveStreamId      Int?
+  liveStream        LiveStream?          @relation(fields: [liveStreamId], references: [id], onDelete: SetNull)
+  
+  userId            Int
+  user              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  status            AIDetectionStatus    @default(PENDING)
+  result            AIDetectionResult?
+  confidence        Float?               
+  
+  analysisDetails   Json?                
+  detectionMethod   String?             
+  
+  processingTime    Int?                 
+  errorMessage      String?
+  
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  
+  @@index([userId])
+  @@index([contentType])
+  @@index([status])
+  @@index([result])
+  @@index([videoId])
+  @@index([podcastId])
+  @@index([liveStreamId])
+  @@index([createdAt])
 }
