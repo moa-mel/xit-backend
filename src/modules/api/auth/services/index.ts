@@ -276,7 +276,7 @@ export class AuthService {
     async refreshAccessToken(token: string) {
         try {
             const payload: DataStoredInToken = await this.jwtService.verifyAsync(token, {
-                secret: this.configService.get<'string'>('JWT_REFRESH_TOKEN_SECRET'),
+                secret: this.configService.get<'string'>('REFRESH_JWT_SECRET'),
             });
 
             const savedToken = await this.redisService.get(

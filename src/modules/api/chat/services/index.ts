@@ -11,12 +11,12 @@ import { UserNotFoundException } from "../../auth/errors";
 
 
 export class ChatService {
-    constructor(
-        private prisma: PrismaService,
-        @InjectQueue(BULL_QUEUES.NOTIFICATION) private notificationQueue: Queue,
-    ) { }
+  constructor(
+    private prisma: PrismaService,
+    @InjectQueue(BULL_QUEUES.NOTIFICATION) private notificationQueue: Queue,
+  ) { }
 
-      async startChat(user: User, options: JoinChatDto) {
+  async startChat(user: User, options: JoinChatDto) {
     if (user.id === options.userId) {
       throw new JoinChatError(
         'User cannot chat with self',

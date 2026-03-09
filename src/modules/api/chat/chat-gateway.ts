@@ -25,13 +25,12 @@ interface RoomInfo {
 })
 @UseGuards(WsAuthGuard)
 export class ChatGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
-{
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private readonly chatService: ChatService,
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   @WebSocketServer() server: Server;
 
@@ -134,13 +133,13 @@ export class ChatGateway
     @ConnectedSocket() client: Socket,
   ) {
     const user = (client as any).user;
-    
+
     try {
       const result = await this.chatService.joinLivestreamChat(user, data.liveStreamId);
       const roomId = `livestream-${data.liveStreamId}`;
-      
+
       client.join(roomId);
-      
+
       if (!this.rooms.has(roomId)) {
         this.rooms.set(roomId, {
           roomId,
@@ -149,20 +148,20 @@ export class ChatGateway
           lastActivity: new Date(),
         });
       }
-      
+
       const room = this.rooms.get(roomId);
       if (room) {
         room.clients.add(client.id);
         room.lastActivity = new Date();
       }
-      
+
       client.emit('joinedLivestreamChat', {
         success: true,
         conversationId: result.data.conversationId,
         liveStreamId: data.liveStreamId,
         roomId,
       });
-      
+
       logger.log(`User ${user.email} joined livestream chat ${data.liveStreamId}`);
     } catch (error) {
       client.emit('error', {
@@ -215,7 +214,7 @@ export class ChatGateway
   @SubscribeMessage('roomMessage')
   async handleRoomMessage(
     @MessageBody()
-    data: { conversationId: string; message: string; type:  MessageType },
+    data: { conversationId: string; message: string; type: MessageType },
     @ConnectedSocket() client: Socket,
   ): Promise<void> {
     const user = client.data.user;
