@@ -1,7 +1,9 @@
 import { Body, Controller, Post, Request, Get, ParseIntPipe, Param, UseGuards, Query } from "@nestjs/common";
 import { PodCastService } from "../services";
-import { CreatePodCastDto, ListenToPodcastDto, PaginationDto } from "../dtos";
+import { CreatePodCastDto, ListenToPodcastDto, PaginationDto, GetPodcastStatsDto } from "../dtos";
 import { AuthGuard } from "../../auth/guards";
+import { User } from "@prisma/client";
+import { GetUser } from "../../user/decorators";
 
 @UseGuards(AuthGuard)
 @Controller({
@@ -24,12 +26,15 @@ export class PodCastController {
 
   // Get podcast by id
   @Get(':id')
-  async getPodcastById(@Param('id', ParseIntPipe) id: number) {
-    return this.podCastService.getPodcastById(id);
+  async getPodcastById(@Param('id', ParseIntPipe) id: number, @Request() req) {
+    return this.podCastService.getPodcastById(id, req.user);
   }
 
-
-
+  // Get podcast stats (owner only)
+  @Get('stats/:id')
+  async getPodcastStats(@GetUser() user: User, @Param('id', ParseIntPipe) id: number) {
+    return this.podCastService.getPodcastStats(id, user);
+  }
 
   // Listen to podcast
   @Post('listen/:id')
@@ -37,7 +42,4 @@ export class PodCastController {
   ) {
     return this.podCastService.listenToPodcast(+podcastId, req.user?.id, sessionId);
   }
-
-
-
 }

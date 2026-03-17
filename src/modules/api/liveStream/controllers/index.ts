@@ -7,10 +7,11 @@ import {
   Param,
   Request,
   ParseIntPipe,
-  UseGuards
+  UseGuards,
+  Query
 } from '@nestjs/common';
 import { LiveStreamService } from "../services";
-import { CreateLiveStreamDto, EndLiveStreamDto } from "../dtos";
+import { CreateLiveStreamDto, EndLiveStreamDto, GetStreamStatsDto, SendMessageDto } from "../dtos";
 import { User } from '@prisma/client';
 import { GetUser } from '../../user/decorators';
 import { AuthGuard } from '../../auth/guards';
@@ -29,11 +30,10 @@ export class LiveStreamController {
     return this.liveStreamService.createLiveStream(req.user, dto);
   }
 
-
   // End any live stream
   @Patch(':id/end')
   async end(
-    @GetUser() user: User, // Assuming you have a custom decorator
+    @GetUser() user: User,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: EndLiveStreamDto
   ) {
@@ -54,4 +54,18 @@ export class LiveStreamController {
     );
   }
 
+  @Get('stats/:id')
+  async getStreamStats(@GetUser() user: User, @Param('id', ParseIntPipe) id: number) {
+    return this.liveStreamService.getStreamStats(id, user);
+  }
+
+  @Post('message')
+  async sendMessage(@GetUser() user: User, @Body() dto: SendMessageDto) {
+    return this.liveStreamService.sendMessage(user, dto);
+  }
+
+  @Get('messages/:id')
+  async getStreamMessages(@Param('id', ParseIntPipe) id: number, @Request() req) {
+    return this.liveStreamService.getStreamMessages(id, req.user);
+  }
 }

@@ -1,23 +1,4 @@
-import { IsBooleanString, IsNumber, IsNumberString, IsOptional, IsString } from "class-validator"
-
-export class CreatePodCastDto {
-    @IsString()
-    title: string;
-
-    @IsString()
-    @IsOptional()
-    description?: string;
-
-    @IsString()
-    @IsOptional()
-    picture?: string;
-
-    @IsString()
-    audioUrl: string;
-
-    @IsOptional()
-    date?: Date;
-}
+import { IsBooleanString, IsNumber, IsNumberString, IsOptional, IsString, IsBoolean, IsDate, Type } from "class-validator"
 
 export class ListenToPodcastDto {
     @IsNumber()
@@ -25,6 +6,36 @@ export class ListenToPodcastDto {
 
     @IsString()
     sessionId?: string;
+}
+
+export class CreatePodCastDto {
+    @IsString()
+    title: string;
+
+    @IsOptional()
+    @IsString()
+    description?: string;
+
+    @IsOptional()
+    @IsString()
+    picture?: string;
+
+    @IsString()
+    audioUrl: string;
+
+    @IsOptional()
+    @Type(() => Date)
+    @IsDate()
+    date?: Date;
+
+    @IsOptional()
+    @IsBoolean()
+    triggerAIDetection?: boolean = true;
+}
+
+export class GetPodcastStatsDto {
+    @IsNumber()
+    podcastId: number;
 }
 
 export class PaginationDto {

@@ -1,11 +1,37 @@
-import { Type } from "class-transformer";
-import { IsBoolean, IsDate, IsOptional, IsString, IsUrl } from "class-validator";
+import { IsBoolean, IsOptional, IsString, IsNumber } from "class-validator";
 
+export class GetStreamStatsDto {
+    @IsNumber()
+    liveStreamId: number;
+}
+
+export class SendMessageDto {
+    @IsString()
+    content: string;
+
+    @IsNumber()
+    liveStreamId: number;
+}
 
 export class CreateLiveStreamDto {
     @IsString()
-    title: string
+    title: string;
 
+    @IsOptional()
+    @IsString()
+    description?: string;
+
+    @IsOptional()
+    @IsString()
+    thumbnailUrl?: string;
+
+    @IsOptional()
+    @IsBoolean()
+    enableRecording?: boolean = true;
+
+    @IsOptional()
+    @IsBoolean()
+    enableChat?: boolean = true;
 }
 
 export class EndLiveStreamDto {
@@ -15,5 +41,9 @@ export class EndLiveStreamDto {
 
   @IsOptional()
   @IsString()
-  title?: string; // Optional custom title for recording
+  title?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  triggerAIDetection?: boolean = true;
 }
