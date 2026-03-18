@@ -5,11 +5,13 @@ import { NotificationModule } from "../notification";
 import { BullModule } from "@nestjs/bull";
 import { BULL_QUEUES } from "@/bull/constants";
 import { AgoraModule } from "@/core/agora";
+import { AIDetectionModule } from "../aiDetection";
 
 
 @Module({
   imports: [
     NotificationModule, 
+    AIDetectionModule,
     BullModule.registerQueue({
       name: BULL_QUEUES.NOTIFICATION,
     }),
