@@ -1,0 +1,614 @@
+{
+  "info": {
+    "name": "XIT Backend API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Sign Up",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/signup",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "signup"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', response.data.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"verification_token_here\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-email/{{identifier}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "verify-email", "{{identifier}}"]
+            }
+          }
+        },
+        {
+          "name": "Forget Password",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/forget-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "forget-password"]
+            }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"reset_token_here\",\n  \"newPassword\": \"newpassword123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/reset-password/{{identifier}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "reset-password", "{{identifier}}"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accessToken\": \"{{accessToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh-token?token={{accessToken}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh-token"],
+              "query": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User",
+      "item": [
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Smith\",\n  \"picture\": \"optional_profile_picture_url\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/user/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "user", "{{userId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Podcast",
+      "item": [
+        {
+          "name": "Create Podcast",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"My Podcast\",\n  \"description\": \"Podcast description\",\n  \"picture\": \"cover_image_url\",\n  \"audioUrl\": \"audio_file_url\",\n  \"date\": \"2026-03-18T10:00:00Z\",\n  \"triggerAIDetection\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/podcast/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["podcast", "create"]
+            }
+          }
+        },
+        {
+          "name": "Get All Podcasts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/podcast/all?pagination=true&page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["podcast", "all"],
+              "query": [
+                {
+                  "key": "pagination",
+                  "value": "true"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Podcast by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/podcast/{{podcastId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["podcast", "{{podcastId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Podcast Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/podcast/stats/{{podcastId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["podcast", "stats", "{{podcastId}}"]
+            }
+          }
+        },
+        {
+          "name": "Listen to Podcast",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"optional_session_id\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/podcast/listen/{{podcastId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["podcast", "listen", "{{podcastId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Live Stream",
+      "item": [
+        {
+          "name": "Create Live Stream",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"My Live Stream\",\n  \"description\": \"Stream description\",\n  \"picture\": \"thumbnail_url\",\n  \"scheduledFor\": \"2026-03-18T15:00:00Z\",\n  \"triggerAIDetection\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/live-stream/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["live-stream", "create"]
+            }
+          }
+        },
+        {
+          "name": "Get Live Streams",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/live-stream/live",
+              "host": ["{{baseUrl}}"],
+              "path": ["live-stream", "live"]
+            }
+          }
+        },
+        {
+          "name": "Join Live Stream",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"optional_session_id\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/live-stream/join/{{streamId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["live-stream", "join", "{{streamId}}"]
+            }
+          }
+        },
+        {
+          "name": "End Live Stream",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Stream ended\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/live-stream/{{streamId}}/end",
+              "host": ["{{baseUrl}}"],
+              "path": ["live-stream", "{{streamId}}", "end"]
+            }
+          }
+        },
+        {
+          "name": "Get Stream Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/live-stream/stats/{{streamId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["live-stream", "stats", "{{streamId}}"]
+            }
+          }
+        },
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"liveStreamId\": 1,\n  \"message\": \"Hello everyone!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/live-stream/message",
+              "host": ["{{baseUrl}}"],
+              "path": ["live-stream", "message"]
+            }
+          }
+        },
+        {
+          "name": "Get Stream Messages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/live-stream/messages/{{streamId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["live-stream", "messages", "{{streamId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI Detection",
+      "item": [
+        {
+          "name": "Initiate Detection",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contentType\": \"PODCAST\",\n  \"contentUrl\": \"content_url\",\n  \"contentTitle\": \"Content Title\",\n  \"podcastId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai-detection/detect",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-detection", "detect"]
+            }
+          }
+        },
+        {
+          "name": "Bulk Detection",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contents\": [\n    {\n      \"contentType\": \"PODCAST\",\n      \"contentUrl\": \"url1\",\n      \"contentTitle\": \"Title 1\",\n      \"podcastId\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai-detection/bulk-detect",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-detection", "bulk-detect"]
+            }
+          }
+        },
+        {
+          "name": "Get Detection Result",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ai-detection/{{detectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-detection", "{{detectionId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Detection History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ai-detection/history/all?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-detection", "history", "all"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Detection Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ai-detection/stats/overview",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-detection", "stats", "overview"]
+            }
+          }
+        },
+        {
+          "name": "Get Video Detections",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ai-detection/video/{{videoId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-detection", "video", "{{videoId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Podcast Detections",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ai-detection/podcast/{{podcastId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-detection", "podcast", "{{podcastId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get LiveStream Detections",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ai-detection/livestream/{{liveStreamId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-detection", "livestream", "{{liveStreamId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Detection",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ai-detection/{{detectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-detection", "{{detectionId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Google Auth",
+      "item": [
+        {
+          "name": "Get Google Auth URL",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/google/url",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "google", "url"]
+            }
+          }
+        },
+        {
+          "name": "Google Callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/google/callback?code=auth_code_here",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "google", "callback"],
+              "query": [
+                {
+                  "key": "code",
+                  "value": "auth_code_here"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
