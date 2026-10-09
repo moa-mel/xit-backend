@@ -9,6 +9,7 @@ import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 export interface CreateServerOptions {
   port: number;
@@ -51,6 +52,17 @@ export default async (
   app.useGlobalPipes(classValidatorPipeInstance());
   const httpAdapterHost = app.get(HttpAdapterHost);
   app.useGlobalFilters(new AllExceptionsFilter(httpAdapterHost));
+
+  const config = new DocumentBuilder()
+    .setTitle('Live Streaming API')
+    .setDescription('Live Streaming API documentation')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+
+  SwaggerModule.setup('docs', app, document);
 
   app.listen(options.port);
 
